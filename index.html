@@ -90,6 +90,8 @@
 </header>
 
 <section class="list" id="list"></section>
+<h2 style="margin:14px 0 6px;">フレーズ</h2>
+<section class="list" id="phraseList"></section>
 
 <div class="small muted" style="margin-top:10px">
   タイ語は正確な拼音（例：<code>sà-wàt-dii</code>）を併記。お気に入り/A–B/速度/シーケンス設定は端末に保存。
@@ -232,9 +234,25 @@ const ITEMS = [
   { id:"core-125", th:"พี่สาว",  rom:"phîi-sǎao",   jp:"姉" },
   { id:"core-126", th:"น้องสาว", rom:"nɔ́ɔŋ-sǎao",  jp:"妹" },
 ];
+/* ===== フレーズデータ =====
+   クリックで語単位検索、再生はTTS（ファイル未指定）。
+*/
+const PHRASES = [
+  { id:"ph-001", th:"สวัสดีครับ ยินดีที่ได้รู้จัก", rom:"sà-wàt-dii khráp, yin-dii thîi dâi rúu-càk", jp:"こんにちは。はじめまして。" },
+  { id:"ph-002", th:"คุณสบายดีไหม", rom:"khun sabaaidii mái", jp:"お元気ですか？" },
+  { id:"ph-003", th:"ผมหิวข้าวมาก", rom:"phǒm hǐu khâao mâak", jp:"とてもお腹が空きました。" },
+  { id:"ph-004", th:"ไปด้วยกันไหม", rom:"pai dûai-kan mái", jp:"一緒に行きませんか？" },
+  { id:"ph-005", th:"อันนี้ราคาเท่าไหร่", rom:"an-níi raa-khaa thâo-rài", jp:"これはいくらですか？" },
+  { id:"ph-006", th:"ขอบคุณมากครับ", rom:"khɔ̀ɔp-khun mâak khráp", jp:"本当にありがとうございます。" },
+  { id:"ph-007", th:"ขอโทษครับ ผมมาสาย", rom:"khǎaw-thôot khráp, phǒm maa săai", jp:"すみません、遅れました。" },
+  { id:"ph-008", th:"ช่วยพูดอีกครั้งได้ไหม", rom:"chûai phûut ìik khráng dâi mái", jp:"もう一度言ってもらえますか？" },
+  { id:"ph-009", th:"ฉันกำลังเรียนภาษาไทย", rom:"chǎn kam-lang rian phaa-săa thai", jp:"私はタイ語を勉強しています。" },
+  { id:"ph-010", th:"นี่อร่อยมากเลย", rom:"nîi a-rɔ̀i mâak loei", jp:"これすごくおいしい！" },
+];
 
 /* ===== 参照 ===== */
 const list = document.getElementById('list');
+const phraseList = document.getElementById('phraseList');   // ← 追加
 const q = document.getElementById('q'), clearBtn = document.getElementById('clearBtn');
 const player = document.getElementById('player');
 const rate = document.getElementById('rate'), rateLabel = document.getElementById('rateLabel');
