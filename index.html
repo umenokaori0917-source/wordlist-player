@@ -321,6 +321,73 @@ function render(items){
   });
   updateNowPlayingStyle();
 }
+// 単語クリックで検索に飛ばすための小ヘルパ
+function jumpSearch(word){
+  q.value = word;
+  doFilter();
+  q.focus();
+}
+
+// フレーズ描画：タイ語の各語をクリック可能に
+function renderPhrases(items){
+  phraseList.innerHTML = '';
+  items.forEach(p=>{
+    const card = document.createElement('div');
+    card.className = 'card';
+    card.dataset.id = p.id;
+
+    // 見出し＋再生
+    const head = document.createElement('div');
+    head.className = 'head';
+
+    const L = document.createElement('div');
+    L.className = 'th';
+
+    // タイ語を語単位に分割（空白・句読点でおおまかに）
+    const frag = document.createDocumentFragment();
+    p.th.split(/(\s+|[,.?!、。！？」」()（）])/).forEach(token=>{
+      if(!token) return;
+      if(/\s+|[,.?!、。！？」」()（）]/.test(token)){
+        frag.appendChild(document.createTextNode(token));
+      }else{
+        const span = document.createElement('span');
+        span.textContent = token;
+        span.style.textDecoration = 'underline';
+        span.style.textUnderlineOffset = '3px';
+        span.style.cursor = 'pointer';
+        span.title = 'この語で検索';
+        span.addEventListener('click', ()=>jumpSearch(token));
+        frag.appendChild(span);
+      }
+    });
+    L.appendChild(frag);
+
+    const R = document.createElement('div');
+    const btn = document.createElement('button');
+    btn.textContent = '▶ 再生';
+    btn.addEventListener('click', ()=> playSequenceFor(p));  // item互換でOK（file未指定→TTS）
+    R.appendChild(btn);
+
+    head.appendChild(L); head.appendChild(R);
+
+    const rom = document.createElement('div');
+    rom.className='rom';
+    rom.textContent = p.rom || '';
+
+    const jp = document.createElement('div');
+    jp.className='jp';
+    jp.textContent = p.jp || '';
+
+    card.appendChild(head);
+    card.appendChild(rom);
+    card.appendChild(jp);
+    phraseList.appendChild(card);
+
+    // 単語側と同じUI更新用プロパティを最低限用意
+    p._els = { playBtn: btn, thText: L };
+  });
+}
+
 function updateNowPlayingStyle(){
   ITEMS.forEach(it=>{ if(!it._els) return; it._els.thText.classList.toggle('nowplaying', it.id===currentId && (!player.paused || speaking)); });
 }
