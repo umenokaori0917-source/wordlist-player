@@ -389,8 +389,14 @@ function renderPhrases(items){
 }
 
 function updateNowPlayingStyle(){
-  ITEMS.forEach(it=>{ if(!it._els) return; it._els.thText.classList.toggle('nowplaying', it.id===currentId && (!player.paused || speaking)); });
+  [...ITEMS, ...PHRASES].forEach(it=>{
+    if(!it._els) return;
+    it._els.thText.classList.toggle('nowplaying',
+      it.id === currentId && (!player.paused || speaking)
+    );
+  });
 }
+
 function updateProgressUI(item){ if(!item||!item._els) return; const {bar,timeLabel}=item._els; const dur=player.duration||0, cur=player.currentTime||0; const pct=dur?Math.min(100, Math.max(0,(cur/dur)*100)):0; bar.style.width=pct+'%'; timeLabel.textContent=secondsToMMSS(cur)+(dur?' / '+secondsToMMSS(dur):''); }
 let progressTimer=null;
 function startProgress(item){ stopProgress(); progressTimer=setInterval(()=>updateProgressUI(item),200); }
