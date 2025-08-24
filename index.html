@@ -344,23 +344,22 @@ function renderPhrases(items){
     L.className = 'th';
 
     // タイ語を語単位に分割（空白・句読点でおおまかに）
-    const frag = document.createDocumentFragment();
-    p.th.split(/(\s+|[,.?!、。！？」」()（）])/).forEach(token=>{
-      if(!token) return;
-      if(/\s+|[,.?!、。！？」」()（）]/.test(token)){
-        frag.appendChild(document.createTextNode(token));
-      }else{
-        const span = document.createElement('span');
-        span.textContent = token;
-        span.style.textDecoration = 'underline';
-        span.style.textUnderlineOffset = '3px';
-        span.style.cursor = 'pointer';
-        span.title = 'この語で検索';
-        span.addEventListener('click', ()=>jumpSearch(token));
-        frag.appendChild(span);
-      }
-    });
-    L.appendChild(frag);
+   const frag = document.createDocumentFragment();
+tokenizeThaiForClickable(p.th).forEach(tok=>{
+  if (!tok.clickable){
+    frag.appendChild(document.createTextNode(tok.text));
+  }else{
+    const span = document.createElement('span');
+    span.textContent = tok.text;
+    span.style.textDecoration = 'underline';
+    span.style.textUnderlineOffset = '3px';
+    span.style.cursor = 'pointer';
+    span.title = 'この語で検索';
+    span.addEventListener('click', ()=> jumpSearch(tok.text));
+    frag.appendChild(span);
+  }
+});
+L.appendChild(frag);
 
     const R = document.createElement('div');
     const btn = document.createElement('button');
