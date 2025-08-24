@@ -515,11 +515,27 @@ seqStart.addEventListener('click', startContinuous);
 seqStop.addEventListener('click', ()=>{ stopContinuous(); speechSynthesis.cancel(); if(!player.paused){ player.pause(); } });
 
 /* ===== 検索 ===== */
-function doFilter(){ const v=q.value.trim().toLowerCase(); const filtered=ITEMS.filter(it=>it.th.toLowerCase().includes(v)||it.rom.toLowerCase().includes(v)||it.jp.toLowerCase().includes(v)); render(filtered); }
+function doFilter(){
+  const v = q.value.trim().toLowerCase();
+  const wordFiltered = ITEMS.filter(it =>
+    it.th.toLowerCase().includes(v) ||
+    it.rom.toLowerCase().includes(v) ||
+    it.jp.toLowerCase().includes(v)
+  );
+  render(wordFiltered);
+
+  const phraseFiltered = PHRASES.filter(p =>
+    (p.th||'').toLowerCase().includes(v) ||
+    (p.rom||'').toLowerCase().includes(v) ||
+    (p.jp||'').toLowerCase().includes(v)
+  );
+  renderPhrases(phraseFiltered);
+}
 q.addEventListener('input', doFilter); clearBtn.addEventListener('click', ()=>{ q.value=''; doFilter(); });
 
 /* ===== 初期描画 ===== */
 render(ITEMS);
+renderPhrases(PHRASES);
 </script>
 </body>
 </html>
