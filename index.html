@@ -123,9 +123,65 @@ function pickVoice(langTag){
 */
 const ITEMS = [
   { id:"th-001", th:"สวัสดี", rom:"sà-wàt-dii", jp:"こんにちは", file_th:"th-001-sawatdee.mp3" },
-  { id:"th-002", th:"ขอบคุณ", rom:"khɔ̀ɔp-khun", jp:"ありがとう", file_th:"th-002-khopkhun.mp3" },
+  { id:"th-002", th:"ขอบคุณ", rom:"khɔ̀ɔp-khun", jp:"ありがとう" },
   { id:"th-003", th:"ขอโทษ", rom:"khǎaw-thôot", jp:"ごめんなさい" },
   { id:"th-004", th:"ใช่",   rom:"châi",         jp:"はい（そうです）" }
+    // コア動詞
+  { id:"core-001", th:"ไป",     rom:"pai",           jp:"行く" },
+  { id:"core-002", th:"มา",     rom:"maa",           jp:"来る" },
+  { id:"core-003", th:"เป็น",   rom:"pen",           jp:"〜だ（本質）" },
+  { id:"core-004", th:"อยู่",   rom:"yùu",           jp:"いる・住む" },
+  { id:"core-005", th:"มี",     rom:"mii",           jp:"持つ・ある" },
+  { id:"core-006", th:"ทำ",     rom:"tham",          jp:"する・作る" },
+  { id:"core-007", th:"กิน",    rom:"kin",           jp:"食べる" },
+  { id:"core-008", th:"ดื่ม",   rom:"dʉ̀ʉm",         jp:"飲む" },
+  { id:"core-009", th:"ชอบ",    rom:"chɔ̂ɔp",        jp:"好き" },
+  { id:"core-010", th:"รู้",     rom:"rúu",           jp:"知る" },
+  { id:"core-011", th:"เข้าใจ", rom:"khâo-cai",      jp:"理解する" },
+  { id:"core-012", th:"พูด",    rom:"phûut",         jp:"話す" },
+  { id:"core-013", th:"เรียน",  rom:"rian",          jp:"学ぶ" },
+  { id:"core-014", th:"ดู",     rom:"duu",           jp:"見る" },
+  { id:"core-015", th:"ให้",    rom:"hâi",           jp:"与える・〜させる" },
+
+  // 機能語・接続
+  { id:"core-020", th:"ไม่",      rom:"mâi",       jp:"〜ない（否定）" },
+  { id:"core-021", th:"หรือ",     rom:"rʉ̌ʉ",      jp:"それとも／〜ですか？" },
+  { id:"core-022", th:"ที่",       rom:"thîi",      jp:"〜で／〜の／関係詞" },
+  { id:"core-023", th:"กับ",      rom:"kàp",       jp:"〜と／一緒に" },
+  { id:"core-024", th:"เพราะว่า", rom:"phrɔ́-wâa", jp:"〜だから" },
+  { id:"core-025", th:"แต่",      rom:"tɛ̀ɛ",      jp:"しかし" },
+  { id:"core-026", th:"แล้ว",     rom:"lɛ́ɛo",     jp:"もう・それから" },
+  { id:"core-027", th:"ก็",       rom:"kɔ̂ɔ",      jp:"〜も／そして" },
+  { id:"core-028", th:"เลย",      rom:"loei",      jp:"まったく／強調" },
+
+  // 疑問語
+  { id:"core-030", th:"ใคร",      rom:"khrai",       jp:"だれ" },
+  { id:"core-031", th:"อะไร",     rom:"a-rai",       jp:"何" },
+  { id:"core-032", th:"ที่ไหน",    rom:"thîi-nǎi",    jp:"どこ" },
+  { id:"core-033", th:"เมื่อไหร่", rom:"mʉ̂a-rài",    jp:"いつ" },
+  { id:"core-034", th:"เท่าไหร่",  rom:"thâo-rài",    jp:"いくら／どれくらい" },
+  { id:"core-035", th:"ทำไม",     rom:"tham-mai",    jp:"なぜ" },
+  { id:"core-036", th:"อย่างไร",  rom:"yàang-rai",   jp:"どのように" },
+  { id:"core-037", th:"ยังไง",     rom:"yang-ngai",   jp:"どうやって（口語）" },
+
+  // 形容詞
+  { id:"core-040", th:"ดี",     rom:"dii",       jp:"良い" },
+  { id:"core-041", th:"ใหม่",   rom:"mài",       jp:"新しい" },
+  { id:"core-042", th:"เก่า",   rom:"kào",       jp:"古い" },
+  { id:"core-043", th:"สวย",   rom:"sǔai",      jp:"きれい" },
+  { id:"core-044", th:"อร่อย", rom:"a-rɔ̀i",     jp:"おいしい" },
+  { id:"core-045", th:"ง่าย",  rom:"ngâai",     jp:"簡単" },
+  { id:"core-046", th:"ยาก",   rom:"yâak",      jp:"難しい" },
+  { id:"core-047", th:"แพง",   rom:"phɛɛng",    jp:"高い（値段）" },
+  { id:"core-048", th:"เร็ว",   rom:"reo",       jp:"速い" },
+  { id:"core-049", th:"ช้า",    rom:"cháa",      jp:"遅い" },
+
+  // サバイバル表現
+  { id:"core-050", th:"ใช่",         rom:"châi",          jp:"はい／そうです" },
+  { id:"core-051", th:"ไม่ใช่",      rom:"mâi-châi",      jp:"いいえ／違います" },
+  { id:"core-052", th:"ขอบคุณ",     rom:"khɔ̀ɔp-khun",   jp:"ありがとう" },
+  { id:"core-053", th:"ขอโทษ",      rom:"khǎaw-thôot",   jp:"ごめんなさい" },
+  { id:"core-054", th:"ช่วยหน่อย",  rom:"chûai nɔ̀i",     jp:"〜してください（お願い）" }
 ];
 
 /* ===== 参照 ===== */
