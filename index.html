@@ -54,6 +54,11 @@
   <select id="levelFilter">
     <option value="">（なし）</option>
     <option value="k5">タイ語検定5級</option>
+    <option value="k4">タイ語検定4級</option>
+    <option value="k3">タイ語検定3級</option>
+    <option value="kp2">タイ語検定準2級</option>
+    <option value="k2">タイ語検定2級</option>
+    <option value="k1">タイ語検定1級</option>
   </select>
 </label>
 
@@ -282,6 +287,7 @@ const PHRASES = [
 const list = document.getElementById('list');
 const phraseList = document.getElementById('phraseList');   // ← 追加
 const q = document.getElementById('q'), clearBtn = document.getElementById('clearBtn');
+const levelFilter = document.getElementById('levelFilter');  // ← 追加
 const player = document.getElementById('player');
 const rate = document.getElementById('rate'), rateLabel = document.getElementById('rateLabel');
 const minusBtn = document.getElementById('minusBtn'), plusBtn = document.getElementById('plusBtn');
@@ -558,30 +564,67 @@ async function userStart(item){
 }
 
 /* ===== 連続再生 ===== */
-function buildQueue(){ if(seqMode.value==='favs'){ const fav=new Set(getFavs()); queue = ITEMS.filter(it=>fav.has(it.id)); } else { queue = ITEMS.slice(); } }
+function currentFilteredItems(){
+  const v = q.value.trim().toLowerCase();
+  const lv = levelFilter.value;
+  return ITEMS.filter(it =>
+    (it.th.toLowerCase().includes(v) ||
+     it.rom.toLowerCase().includes(v) ||
+     it.jp.toLowerCase().includes(v)) &&
+    (!lv || (it.lvl && it.lvl.includes(lv)))
+  );
+}
+
+function buildQueue(){
+  if (seqMode.value==='favs'){
+    const fav=new Set(getFavs());
+    // お気に入りにも級フィルタを適用
+    const lv = levelFilter.value;
+    queue = ITEMS.filter(it => fav.has(it.id) && (!lv || (it.lvl && it.lvl.includes(lv))));
+  } else {
+    queue = currentFilteredItems(); // 検索・級フィルタ後の一覧だけ
+  }
+}
 function startContinuous(){ buildQueue(); if(!queue.length){ alert(seqMode.value==='favs'?'お気に入りが空です。☆をつけてください。':'再生対象がありません。'); return; } isContinuous=true; const ix=currentId?queue.findIndex(x=>x.id===currentId):-1; queueIndex=ix>=0?ix:0; userStart(queue[queueIndex]); seqStart.disabled=true; seqMode.disabled=true; }
 function stopContinuous(){ isContinuous=false; queue=[]; queueIndex=-1; seqStart.disabled=false; seqMode.disabled=false; np.textContent=''; }
 seqStart.addEventListener('click', startContinuous);
 seqStop.addEventListener('click', ()=>{ stopContinuous(); speechSynthesis.cancel(); if(!player.paused){ player.pause(); } });
 
+// 指定級の語（ITEMS）を含むか判定
+function phraseUsesLevel(p, lv){
+  if (!lv) return true;
+  const targets = new Set(ITEMS.filter(it => it.lvl && it.lvl.includes(lv)).map(it => it.th));
+  // 簡易：含有チェック（Segmenterがあればより精度UP）
+  for (const th of targets){ if ((p.th||'').includes(th)) return true; }
+  return false;
+}
+
 /* ===== 検索 ===== */
 function doFilter(){
   const v = q.value.trim().toLowerCase();
-  const wordFiltered = ITEMS.filter(it =>
-    it.th.toLowerCase().includes(v) ||
-    it.rom.toLowerCase().includes(v) ||
-    it.jp.toLowerCase().includes(v)
-  );
+  const lv = levelFilter.value; // "", "k5" など
+
+  const wordFiltered = ITEMS.filter(it => {
+    const hit = it.th.toLowerCase().includes(v) ||
+                it.rom.toLowerCase().includes(v) ||
+                it.jp.toLowerCase().includes(v);
+    const okLevel = !lv || (it.lvl && it.lvl.includes(lv));
+    return hit && okLevel;
+  });
   render(wordFiltered);
 
-  const phraseFiltered = PHRASES.filter(p =>
-    (p.th||'').toLowerCase().includes(v) ||
-    (p.rom||'').toLowerCase().includes(v) ||
-    (p.jp||'').toLowerCase().includes(v)
-  );
+  const phraseFiltered = PHRASES.filter(p => {
+    const hit = (p.th||'').toLowerCase().includes(v) ||
+                (p.rom||'').toLowerCase().includes(v) ||
+                (p.jp||'').toLowerCase().includes(v);
+    const okLevel = !lv || phraseUsesLevel(p, lv);
+    return hit && okLevel;
+  });
   renderPhrases(phraseFiltered);
 }
+
 q.addEventListener('input', doFilter); clearBtn.addEventListener('click', ()=>{ q.value=''; doFilter(); });
+levelFilter.addEventListener('change', doFilter);
 
 /* ===== 初期描画 ===== */
 render(ITEMS);
