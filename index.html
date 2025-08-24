@@ -232,11 +232,14 @@ function patternSteps(){
 function tts(text, lang, rate){
   return new Promise((resolve,reject)=>{
     const u = new SpeechSynthesisUtterance(text);
-    u.lang = lang;
+    const v = pickVoice(lang);     // ← ここで言語に合う声を選ぶ
+    if (v) u.voice = v;
+    u.lang = v?.lang || lang;      // ヒントとして言語も指定
     u.rate = rate;
     u.onstart = ()=>{ speaking=true; updateNowPlayingStyle(); };
-    u.onend = ()=>{ speaking=false; resolve(); };
-    u.onerror = e=>{ speaking=false; reject(e); };
+    u.onend   = ()=>{ speaking=false; resolve(); };
+    u.onerror = e =>{ speaking=false; reject(e); };
+    speechSynthesis.cancel();      // 多重再生防止
     speechSynthesis.speak(u);
   });
 }
