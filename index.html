@@ -104,6 +104,20 @@ try { const u=new URL(location.href); const b=u.searchParams.get('base'); if(b) 
 const TTS_LANG_TH = "th-TH";
 const TTS_LANG_JP = "ja-JP";
 
+/* ==== 追加：TTSボイス選択 ==== */
+let VOICES = [];
+function loadVoices(){ VOICES = speechSynthesis.getVoices(); }
+speechSynthesis.onvoiceschanged = loadVoices;
+loadVoices();
+
+function pickVoice(langTag){
+  const key = (langTag || "").toLowerCase();
+  // 完全一致 → 言語一致(th 等) の順に探す
+  let v = VOICES.find(v => (v.lang || "").toLowerCase() === key);
+  if (!v) v = VOICES.find(v => (v.lang || "").toLowerCase().startsWith(key.split("-")[0]));
+  return v || null;
+}
+
 /* ===== 単語データ =====
   file_th / file_jp は任意。無ければTTSにフォールバック。
 */
