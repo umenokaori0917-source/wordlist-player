@@ -496,7 +496,11 @@ async function playSequenceFor(item){
     }
   }
 }
-function setAllButtonsToPlay(){ ITEMS.forEach(it=>{ if(it._els) it._els.playBtn.textContent='▶ 再生'; }); }
+function setAllButtonsToPlay(){
+  [...ITEMS, ...PHRASES].forEach(it=>{
+    if(it._els) it._els.playBtn.textContent = '▶ 再生';
+  });
+}
 
 async function userStart(item){
   // 連続再生中の位置調整
