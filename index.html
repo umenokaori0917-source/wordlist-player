@@ -321,11 +321,24 @@ function render(items){
   });
   updateNowPlayingStyle();
 }
-// 単語クリックで検索に飛ばすための小ヘルパ
-function jumpSearch(word){
-  q.value = word;
-  doFilter();
-  q.focus();
+// --- Thai 分割ヘルパー（Intl.Segmenter があれば使う）---
+function tokenizeThaiForClickable(text){
+  try{
+    if (typeof Intl !== 'undefined' && Intl.Segmenter){
+      const seg = new Intl.Segmenter('th', { granularity: 'word' });
+      const out = [];
+      for (const s of seg.segment(text)){
+        out.push({ text: s.segment, clickable: !!s.isWordLike });
+      }
+      return out;
+    }
+  }catch(e){}
+  // フォールバック：空白・句読点・記号で分割（簡易）
+  const parts = text.split(/(\s+|[.,;:!?、。！？「」『』()（）【】［］…—\-–])/);
+  return parts.filter(Boolean).map(t => ({
+    text: t,
+    clickable: !/\s+|[.,;:!?、。！？「」『』()（）【】［］…—\-–]/.test(t)
+  }));
 }
 
 // フレーズ描画：タイ語の各語をクリック可能に
