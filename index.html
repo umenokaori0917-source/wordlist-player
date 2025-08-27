@@ -71,6 +71,15 @@
 
     <span class="pill small">再生対象</span>
     <select id="seqMode">
+    <label class="small">
+      連続対象
+      <select id="contScope">
+        <option value="both">単語＋フレーズ</option>
+        <option value="items">単語のみ</option>
+        <option value="phrases">フレーズのみ</option>
+      </select>
+    </label>
+
       <option value="all">一覧（全体）</option>
       <option value="favs">お気に入りのみ</option>
     </select>
@@ -600,15 +609,23 @@ const seqMode = document.getElementById('seqMode'), loopOne = document.getElemen
 const seqStart = document.getElementById('seqStart'), seqStop = document.getElementById('seqStop'), np = document.getElementById('np');
 const seqPreset = document.getElementById('seqPreset'), seqCustom = document.getElementById('seqCustom'), pauseSec = document.getElementById('pauseSec');
 const preferFileTh = document.getElementById('preferFileTh'), preferFileJp = document.getElementById('preferFileJp');
-// 表示/非表示 UI
-const hideTh = document.getElementById('hideTh');
+const hideTh = document.getElementById('hideTh');　// 表示/非表示 UI
 const hideRom = document.getElementById('hideRom');
 const hideJp = document.getElementById('hideJp');
 const audioOnly = document.getElementById('audioOnly');
 const showAllBtn = document.getElementById('showAll');
-// === 連続再生の再開設定 ===
-const resumeToggle = document.getElementById('resumeToggle');
+const resumeToggle = document.getElementById('resumeToggle');　// === 連続再生の再開設定 ===
 const clearResume  = document.getElementById('clearResume');
+const contScope = document.getElementById('contScope');　// 連続対象
+(function initContScope(){
+  const v = localStorage.getItem('contScope') || 'both';
+  if (contScope) contScope.value = v;
+})();
+contScope?.addEventListener('change', ()=>{
+  localStorage.setItem('contScope', contScope.value);
+  // キュー作り直しは必要な時だけ（ここでは検索と同様に再描画だけでOK）
+  doFilter();
+});
 
 function loadResumePref(){
   try{ resumeToggle.checked = (localStorage.getItem('resumeEnabled') === '1'); }
@@ -974,16 +991,44 @@ function currentFilteredItems(){
   );
 }
 
+function currentFilteredPhrases(){
+  const v = q.value.trim().toLowerCase();
+  const lv = levelFilter.value;
+
+  return PHRASES.filter(p => {
+    const hit = (p.th||'').toLowerCase().includes(v) ||
+                (p.rom||'').toLowerCase().includes(v) ||
+                (p.jp||'').toLowerCase().includes(v);
+    const okLevel = !lv || phraseUsesLevel(p, lv);
+    return hit && okLevel;
+  });
+}
+
 function buildQueue(){
-  if (seqMode.value==='favs'){
-    const fav=new Set(getFavs());
-    // お気に入りにも級フィルタを適用
+  const scope = (contScope?.value) || 'both';
+
+  if (seqMode.value === 'favs'){
+    // お気に入りは現状「単語のみ」。級フィルタは適用。
+    const fav = new Set(getFavs());
     const lv = levelFilter.value;
     queue = ITEMS.filter(it => fav.has(it.id) && (!lv || (it.lvl && it.lvl.includes(lv))));
+    return;
+  }
+
+  // 一覧（全体）モード：連続対象の選択に従ってキュー化
+  const words   = currentFilteredItems();
+  const phrases = currentFilteredPhrases();
+
+  if (scope === 'items') {
+    queue = words.slice();
+  } else if (scope === 'phrases') {
+    queue = phrases.slice();
   } else {
-    queue = currentFilteredItems(); // 検索・級フィルタ後の一覧だけ
+    // both: 単語→フレーズの順で連結（必要ならここで交互にする実装にも変更可）
+    queue = words.concat(phrases);
   }
 }
+
 function startContinuous(){
   buildQueue();
   if(!queue.length){
