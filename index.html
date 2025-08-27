@@ -77,6 +77,8 @@
     <label class="small"><input id="loopOne" type="checkbox"> 1語ループ</label>
     <button id="seqStart">▶ 連続</button>
     <button id="seqStop">■ 停止</button>
+    <label class="small"><input id="resumeToggle" type="checkbox"> 続きから再開</label>
+    <button id="clearResume" class="btn">位置クリア</button>
     <span id="np" class="small muted"></span>
   </div>
 
@@ -604,6 +606,38 @@ const hideRom = document.getElementById('hideRom');
 const hideJp = document.getElementById('hideJp');
 const audioOnly = document.getElementById('audioOnly');
 const showAllBtn = document.getElementById('showAll');
+// === 連続再生の再開設定 ===
+const resumeToggle = document.getElementById('resumeToggle');
+const clearResume  = document.getElementById('clearResume');
+
+function loadResumePref(){
+  try{ resumeToggle.checked = (localStorage.getItem('resumeEnabled') === '1'); }
+  catch(e){ resumeToggle.checked = false; }
+}
+function saveResumePref(){
+  localStorage.setItem('resumeEnabled', resumeToggle.checked ? '1' : '0');
+}
+resumeToggle?.addEventListener('change', saveResumePref);
+loadResumePref();
+
+// 保存する最終位置 {id, mode, level, query}
+function saveLastPosition(){
+  const state = {
+    id: currentId || null,
+    mode: seqMode?.value || 'all',
+    level: (typeof levelFilter!=='undefined' && levelFilter) ? (levelFilter.value||'') : '',
+    query: q?.value || ''
+  };
+  localStorage.setItem('contState', JSON.stringify(state));
+}
+function getLastPosition(){
+  try{ return JSON.parse(localStorage.getItem('contState')||'{}'); }
+  catch(e){ return {}; }
+}
+clearResume?.addEventListener('click', ()=>{
+  localStorage.removeItem('contState');
+  alert('保存した再生位置をクリアしました。');
+});
 
 /* ===== 表示/非表示：保存/復元 ===== */
 function saveVisPrefs(){
@@ -871,6 +905,7 @@ function playFile(src, ab){ // ab: {enabled,a,b}
 function fileUrl(name){ return BASE_URL + name; }
 
 async function playSequenceFor(item){
+  saveLastPosition();   // ← ここを追加（連続/単発どちらでも位置を記録）
   currentId = item.id;
   updateNowPlayingStyle();
   setAllButtonsToPlay(); item._els.playBtn.textContent='⏸ 停止';
@@ -949,8 +984,35 @@ function buildQueue(){
     queue = currentFilteredItems(); // 検索・級フィルタ後の一覧だけ
   }
 }
-function startContinuous(){ buildQueue(); if(!queue.length){ alert(seqMode.value==='favs'?'お気に入りが空です。☆をつけてください。':'再生対象がありません。'); return; } isContinuous=true; const ix=currentId?queue.findIndex(x=>x.id===currentId):-1; queueIndex=ix>=0?ix:0; userStart(queue[queueIndex]); seqStart.disabled=true; seqMode.disabled=true; }
-function stopContinuous(){ isContinuous=false; queue=[]; queueIndex=-1; seqStart.disabled=false; seqMode.disabled=false; np.textContent=''; }
+function startContinuous(){
+  buildQueue();
+  if(!queue.length){
+    alert(seqMode.value==='favs'?'お気に入りが空です。☆をつけてください。':'再生対象がありません。');
+    return;
+  }
+
+  // 既定は先頭。チェックONなら保存済みの位置から
+  let startIx = 0;
+  if (resumeToggle && resumeToggle.checked){
+    const st = getLastPosition();
+    if (st && st.id){
+      // 現在のキューの中で最後に再生したIDを探す（フィルタや級が違って入ってなければ無視）
+      const ix = queue.findIndex(x => x.id === st.id);
+      if (ix >= 0) startIx = ix;
+    }
+  }
+
+  isContinuous = true;
+  const ixNow = currentId ? queue.findIndex(x=>x.id===currentId) : -1;
+  queueIndex = (ixNow>=0 ? ixNow : startIx);
+
+  userStart(queue[queueIndex]);
+  seqStart.disabled = true;
+  seqMode.disabled  = true;
+}
+
+function stopContinuous(){ isContinuous=false; queue=[]; queueIndex=-1; seqStart.disabled=false; seqMode.disabled=false; np.textContent=''; saveLastPosition();  // ← 追加
+ }
 seqStart.addEventListener('click', startContinuous);
 seqStop.addEventListener('click', ()=>{ stopContinuous(); speechSynthesis.cancel(); if(!player.paused){ player.pause(); } });
 
@@ -1175,6 +1237,7 @@ resetStartBtn.addEventListener('click', ()=>{
 // 初期呼び出し
 loadStartDate();
 renderTodayGoal();
+window.addEventListener('beforeunload', ()=>{ try{ saveLastPosition(); }catch(e){} });
   
 </script>
 </body>
