@@ -71,7 +71,11 @@
 
     <span class="pill small">再生対象</span>
     <select id="seqMode">
-    <label class="small">
+      <option value="all">一覧（全体）</option>
+      <option value="favs">お気に入りのみ</option>
+    </select>
+    
+    <label class="small" style="margin-left:6px;">
       連続対象
       <select id="contScope">
         <option value="both">単語＋フレーズ</option>
@@ -79,10 +83,7 @@
         <option value="phrases">フレーズのみ</option>
       </select>
     </label>
-
-      <option value="all">一覧（全体）</option>
-      <option value="favs">お気に入りのみ</option>
-    </select>
+    
     <label class="small"><input id="loopOne" type="checkbox"> 1語ループ</label>
     <button id="seqStart">▶ 連続</button>
     <button id="seqStop">■ 停止</button>
