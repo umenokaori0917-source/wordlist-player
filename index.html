@@ -117,6 +117,13 @@
 <section class="list" id="list"></section>
 <h2 style="margin:14px 0 6px;">フレーズ</h2>
 <section class="list" id="phraseList"></section>
+<h2 style="margin:14px 0 6px;">今日の学習目標</h2>
+<section id="todayGoal" class="list"></section>
+<div class="row">
+  <span id="todayMeta" class="pill small">Day1 / 目標: 0項目</span>
+  <span id="streak" class="pill small">連続日数: 0日</span>
+  <button id="resetStart" class="btn">学習開始日を今日に再設定</button>
+</div>
 
 <div class="small muted" style="margin-top:10px">
   タイ語は正確な拼音（例：<code>sà-wàt-dii</code>）を併記。お気に入り/A–B/速度/シーケンス設定は端末に保存。
@@ -999,6 +1006,188 @@ levelFilter.addEventListener('change', doFilter);
 /* ===== 初期描画 ===== */
 render(ITEMS);
 renderPhrases(PHRASES);
+
+/* =======================
+   自動Day進行 & ストリーク
+   ======================= */
+
+// 1) 学習目標（例：7日分）— 必要に応じて増やしてOK
+const GOALS = {
+  day1: { title:"あいさつ", 
+    items:["th-001","th-002","th-003","th-004"],
+    phrases:["ph-001","ph-002"] },
+  day2: { title:"コア動詞①", 
+    items:["core-001","core-002","core-003","core-004","core-005"],
+    phrases:["ph-003","ph-004"] },
+  day3: { title:"疑問詞①", 
+    items:["core-030","core-031","core-032","core-033","core-034"],
+    phrases:["ph-011","ph-018","ph-040"] },
+  day4: { title:"形容詞①", 
+    items:["core-040","core-045","core-046","core-047","core-048"],
+    phrases:["ph-010","ph-062","ph-063"] },
+  day5: { title:"場所①", 
+    items:["core-080","core-081","core-082","core-083","core-084"],
+    phrases:["ph-015","ph-016","ph-025"] },
+  day6: { title:"数字①(1-10)", 
+    items:["core-100","core-101","core-102","core-103","core-104","core-105","core-106","core-107","core-108","core-109"],
+    phrases:["ph-028","ph-030"] },
+  day7: { title:"時間・曜日①", 
+    items:["core-070","core-071","core-072","core-170","core-171","core-172","core-173","core-174","core-175","core-176"],
+    phrases:["ph-041","ph-042","ph-044"] },
+};
+// dayN の最大
+const MAX_DAY = Object.keys(GOALS).length;
+
+// 2) 参照
+const todayGoalEl = document.getElementById('todayGoal');
+const todayMetaEl = document.getElementById('todayMeta');
+const streakEl = document.getElementById('streak');
+const resetStartBtn = document.getElementById('resetStart');
+
+// 3) 開始日の保存/取得（初回アクセス日を Day1 起点に）
+function getTodayKey(d=new Date()){ return d.toISOString().slice(0,10); } // YYYY-MM-DD
+function loadStartDate(){
+  let s = localStorage.getItem('startDate');
+  if(!s){ s = getTodayKey(); localStorage.setItem('startDate', s); }
+  return s; // "YYYY-MM-DD"
+}
+function setStartDateToday(){
+  localStorage.setItem('startDate', getTodayKey());
+}
+
+// 4) 今日が何日目か（1始まり）
+function getDayNumber(){
+  const start = new Date(loadStartDate());
+  const today = new Date(getTodayKey());
+  const diffDays = Math.floor((today - start)/(1000*60*60*24));
+  return Math.max(1, Math.min(MAX_DAY, diffDays + 1));
+}
+
+// 5) 進捗の保存
+function loadProgress(){ return JSON.parse(localStorage.getItem('progressByDate')||'{}'); }
+function saveProgress(p){ localStorage.setItem('progressByDate', JSON.stringify(p)); }
+
+// 6) 今日の目標を描画（チェック保存つき）
+function renderTodayGoal(){
+  const n = getDayNumber();
+  const key = 'day'+n;
+  const goal = GOALS[key] || GOALS['day'+MAX_DAY];
+  todayGoalEl.innerHTML = '';
+  if(!goal){ todayGoalEl.textContent = '今日は目標未設定'; return; }
+
+  // メタ
+  const total = (goal.items?.length||0) + (goal.phrases?.length||0);
+  todayMetaEl.textContent = `Day${n} / 目標: ${total}項目（${goal.title}）`;
+
+  const prog = loadProgress();
+  const dayKey = getTodayKey(); // 日付単位に保存
+  prog[dayKey] = prog[dayKey] || { done:false, day:n };
+
+  // セクション（単語）
+  if(goal.items?.length){
+    const sec = document.createElement('div'); sec.className='card';
+    const h = document.createElement('div'); h.className='head';
+    h.innerHTML = `<div class="th">単語</div>`;
+    sec.appendChild(h);
+    const ul = document.createElement('ul'); ul.style.margin='0'; ul.style.paddingLeft='1em';
+    goal.items.forEach(id=>{
+      const it = ITEMS.find(x=>x.id===id);
+      if(!it) return;
+      const li = document.createElement('li');
+      const chk = document.createElement('input'); chk.type='checkbox';
+      chk.checked = !!prog[dayKey][id];
+      chk.addEventListener('change', ()=>{
+        const pp = loadProgress();
+        pp[dayKey] = pp[dayKey] || {done:false, day:n};
+        pp[dayKey][id] = chk.checked;
+        // 全チェック完了判定
+        const allIds = [...(goal.items||[]), ...(goal.phrases||[])];
+        pp[dayKey].done = allIds.every(x => !!pp[dayKey][x]);
+        saveProgress(pp); updateStreak();
+      });
+      const playBtn = document.createElement('button'); playBtn.textContent='▶ 再生';
+      playBtn.style.marginLeft='6px';
+      playBtn.addEventListener('click', ()=> userStart(it));
+      li.appendChild(chk);
+      li.append(` ${it.th}  `);
+      const rom = document.createElement('span'); rom.className='rom'; rom.textContent=it.rom?` ${it.rom} `:'';
+      const jp  = document.createElement('span'); jp.className='jp';  jp.textContent=it.jp?` ${it.jp} `:'';
+      li.appendChild(rom); li.appendChild(jp); li.appendChild(playBtn);
+      ul.appendChild(li);
+    });
+    sec.appendChild(ul);
+    todayGoalEl.appendChild(sec);
+  }
+
+  // セクション（フレーズ）
+  if(goal.phrases?.length){
+    const sec = document.createElement('div'); sec.className='card';
+    const h = document.createElement('div'); h.className='head';
+    h.innerHTML = `<div class="th">フレーズ</div>`;
+    sec.appendChild(h);
+    const ul = document.createElement('ul'); ul.style.margin='0'; ul.style.paddingLeft='1em';
+    goal.phrases.forEach(id=>{
+      const ph = PHRASES.find(x=>x.id===id);
+      if(!ph) return;
+      const li = document.createElement('li');
+      const chk = document.createElement('input'); chk.type='checkbox';
+      chk.checked = !!prog[dayKey][id];
+      chk.addEventListener('change', ()=>{
+        const pp = loadProgress();
+        pp[dayKey] = pp[dayKey] || {done:false, day:n};
+        pp[dayKey][id] = chk.checked;
+        const allIds = [...(goal.items||[]), ...(goal.phrases||[])];
+        pp[dayKey].done = allIds.every(x => !!pp[dayKey][x]);
+        saveProgress(pp); updateStreak();
+      });
+      const playBtn = document.createElement('button'); playBtn.textContent='▶ 再生';
+      playBtn.style.marginLeft='6px';
+      playBtn.addEventListener('click', ()=> playSequenceFor(ph));
+      li.appendChild(chk);
+      // クリックで語検索できるよう簡易表示（th/rom/jpは既存の可視設定が適用されます）
+      const th = document.createElement('span'); th.className='th'; th.textContent = ' '+ph.th+' ';
+      const rom = document.createElement('span'); rom.className='rom'; rom.textContent = ph.rom?` ${ph.rom} `:'';
+      const jp  = document.createElement('span'); jp.className='jp';  jp.textContent = ph.jp?` ${ph.jp} `:'';
+      li.appendChild(th); li.appendChild(rom); li.appendChild(jp); li.appendChild(playBtn);
+      ul.appendChild(li);
+    });
+    sec.appendChild(ul);
+    todayGoalEl.appendChild(sec);
+  }
+
+  // 表示/非表示ルール（音だけ等）を適用
+  if (typeof applyVisibility === 'function') applyVisibility();
+
+  updateStreak();
+}
+
+// 7) 連続記録（直近から途切れるまで）
+function updateStreak(){
+  const prog = loadProgress();
+  let streak = 0;
+  // 今日から日付を一日ずつ遡り、done==true が連続している日数を数える
+  const dayMs = 24*60*60*1000;
+  let cur = new Date(getTodayKey());
+  while(true){
+    const key = getTodayKey(cur);
+    if (prog[key]?.done) { streak++; cur = new Date(cur - dayMs); }
+    else break;
+  }
+  streakEl.textContent = `連続日数: ${streak}日`;
+}
+
+// 8) 開始日を今日にリセット（やり直したい時用）
+resetStartBtn.addEventListener('click', ()=>{
+  if(confirm('学習開始日を本日に更新します。よろしいですか？（ストリークは保存された実績で再計算されます）')){
+    setStartDateToday();
+    renderTodayGoal();
+  }
+});
+
+// 初期呼び出し
+loadStartDate();
+renderTodayGoal();
+  
 </script>
 </body>
 </html>
