@@ -100,6 +100,18 @@
       <span class="small muted">※ TTSはA–B不可。A–Bしたい語はファイルを用意してください。</span>
     </div>
   </div>
+  <!-- 表示/非表示 切替 -->
+<div class="group">
+  <div class="kv">
+    <strong>表示/非表示</strong>
+    <label class="small"><input type="checkbox" id="hideTh"> タイ語を隠す</label>
+    <label class="small"><input type="checkbox" id="hideRom"> ピンインを隠す</label>
+    <label class="small"><input type="checkbox" id="hideJp"> 日本語を隠す</label>
+    <label class="small"><input type="checkbox" id="audioOnly"> 音だけ（全部隠す）</label>
+    <button id="showAll" class="btn">全表示</button>
+  </div>
+  <div class="small muted">※「音だけ」は上の3つを無視して全て隠します（音声は再生されます）。</div>
+</div>
 </header>
 
 <section class="list" id="list"></section>
@@ -579,6 +591,68 @@ const seqMode = document.getElementById('seqMode'), loopOne = document.getElemen
 const seqStart = document.getElementById('seqStart'), seqStop = document.getElementById('seqStop'), np = document.getElementById('np');
 const seqPreset = document.getElementById('seqPreset'), seqCustom = document.getElementById('seqCustom'), pauseSec = document.getElementById('pauseSec');
 const preferFileTh = document.getElementById('preferFileTh'), preferFileJp = document.getElementById('preferFileJp');
+// 表示/非表示 UI
+const hideTh = document.getElementById('hideTh');
+const hideRom = document.getElementById('hideRom');
+const hideJp = document.getElementById('hideJp');
+const audioOnly = document.getElementById('audioOnly');
+const showAllBtn = document.getElementById('showAll');
+
+/* ===== 表示/非表示：保存/復元 ===== */
+function saveVisPrefs(){
+  const o = {
+    th: !!hideTh.checked,
+    rom: !!hideRom.checked,
+    jp: !!hideJp.checked,
+    audio: !!audioOnly.checked
+  };
+  localStorage.setItem('visPrefs', JSON.stringify(o));
+}
+function loadVisPrefs(){
+  try{
+    const o = JSON.parse(localStorage.getItem('visPrefs')||'{}');
+    hideTh.checked = !!o.th;
+    hideRom.checked = !!o.rom;
+    hideJp.checked = !!o.jp;
+    audioOnly.checked = !!o.audio;
+  }catch(e){}
+}
+loadVisPrefs();
+
+/* ===== 表示/非表示：適用 ===== */
+function applyVisibility(){
+  // audioOnly のときはすべて隠す
+  const audio = audioOnly.checked;
+  const thH = audio || hideTh.checked;
+  const romH = audio || hideRom.checked;
+  const jpH = audio || hideJp.checked;
+
+  // 単語 & フレーズ両方に適用
+  document.querySelectorAll('#list .card, #phraseList .card').forEach(card=>{
+    const thEl  = card.querySelector('.th');
+    const romEl = card.querySelector('.rom');
+    const jpEl  = card.querySelector('.jp');
+    thEl  && thEl.classList.toggle('hidden', thH);
+    romEl && romEl.classList.toggle('hidden', romH);
+    jpEl  && jpEl.classList.toggle('hidden', jpH);
+  });
+
+  // UIの有効/無効（任意）：audioOnly中は他チェック無効化
+  [hideTh, hideRom, hideJp].forEach(cb => cb.disabled = audio);
+}
+
+/* ===== イベント ===== */
+[hideTh, hideRom, hideJp, audioOnly].forEach(el=>{
+  el.addEventListener('change', ()=>{ saveVisPrefs(); applyVisibility(); });
+});
+showAllBtn.addEventListener('click', ()=>{
+  hideTh.checked = hideRom.checked = hideJp.checked = false;
+  audioOnly.checked = false;
+  saveVisPrefs(); applyVisibility();
+});
+
+// 初回適用
+applyVisibility();
 
 let currentId=null, isContinuous=false, queue=[], queueIndex=-1, speaking=false;
 
@@ -639,6 +713,8 @@ function render(items){
   });
   updateNowPlayingStyle();
 }
+  applyVisibility();
+
 // --- Thai 分割ヘルパー（Intl.Segmenter があれば使う）---
 function tokenizeThaiForClickable(text){
   try{
@@ -686,11 +762,19 @@ tokenizeThaiForClickable(p.th).forEach(tok=>{
     span.style.textUnderlineOffset = '3px';
     span.style.cursor = 'pointer';
     span.title = 'この語で検索';
-    span.addEventListener('click', ()=> jumpSearch(tok.text));
+    span.dataset.token = token;
     frag.appendChild(span);
   }
 });
 L.appendChild(frag);
+
+// フレーズ語クリックのイベント委任（再描画や表示切替でも安定）
+phraseList.addEventListener('click', (e)=>{
+  const t = e.target.closest('[data-token]');
+  if (!t) return;
+  const word = t.dataset.token || '';
+  if (word) jumpSearch(word);
+});
 
     const R = document.createElement('div');
     const btn = document.createElement('button');
@@ -717,6 +801,8 @@ L.appendChild(frag);
     p._els = { playBtn: btn, thText: L };
   });
 }
+
+  applyVisibility();
 
 function updateNowPlayingStyle(){
   [...ITEMS, ...PHRASES].forEach(it=>{
