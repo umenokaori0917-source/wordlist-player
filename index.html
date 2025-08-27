@@ -720,7 +720,6 @@ function render(items){
   });
   updateNowPlayingStyle();
 }
-  applyVisibility();
 
 // --- Thai 分割ヘルパー（Intl.Segmenter があれば使う）---
 function tokenizeThaiForClickable(text){
@@ -742,7 +741,7 @@ function tokenizeThaiForClickable(text){
   }));
 }
 
-// フレーズ描画：タイ語の各語をクリック可能に
+// フレーズ描画：タイ語を語単位に分割してクリック検索OK
 function renderPhrases(items){
   phraseList.innerHTML = '';
   items.forEach(p=>{
@@ -750,66 +749,54 @@ function renderPhrases(items){
     card.className = 'card';
     card.dataset.id = p.id;
 
-    // 見出し＋再生
     const head = document.createElement('div');
     head.className = 'head';
 
     const L = document.createElement('div');
     L.className = 'th';
 
-    // タイ語を語単位に分割（空白・句読点でおおまかに）
-   const frag = document.createDocumentFragment();
-tokenizeThaiForClickable(p.th).forEach(tok=>{
-  if (!tok.clickable){
-    frag.appendChild(document.createTextNode(tok.text));
-  }else{
-    const span = document.createElement('span');
-    span.textContent = tok.text;
-    span.style.textDecoration = 'underline';
-    span.style.textUnderlineOffset = '3px';
-    span.style.cursor = 'pointer';
-    span.title = 'この語で検索';
-    span.dataset.token = token;
-    frag.appendChild(span);
-  }
-});
-L.appendChild(frag);
-
-// フレーズ語クリックのイベント委任（再描画や表示切替でも安定）
-phraseList.addEventListener('click', (e)=>{
-  const t = e.target.closest('[data-token]');
-  if (!t) return;
-  const word = t.dataset.token || '';
-  if (word) jumpSearch(word);
-});
+    // 語分割して各語にクリックを付与
+    const frag = document.createDocumentFragment();
+    tokenizeThaiForClickable(p.th || '').forEach(tok=>{
+      if (!tok.clickable){
+        frag.appendChild(document.createTextNode(tok.text));
+      } else {
+        const span = document.createElement('span');
+        span.textContent = tok.text;
+        span.style.textDecoration = 'underline';
+        span.style.textUnderlineOffset = '3px';
+        span.style.cursor = 'pointer';
+        span.title = 'この語で検索';
+        span.dataset.token = tok.text;               // ← 修正：token ではなく tok.text
+        span.addEventListener('click', ()=>{         // ← 直接クリックで検索
+          q.value = tok.text;
+          doFilter();
+          q.focus();
+        });
+        frag.appendChild(span);
+      }
+    });
+    L.appendChild(frag);
 
     const R = document.createElement('div');
     const btn = document.createElement('button');
     btn.textContent = '▶ 再生';
-    btn.addEventListener('click', ()=> playSequenceFor(p));  // item互換でOK（file未指定→TTS）
+    btn.addEventListener('click', ()=> playSequenceFor(p));
     R.appendChild(btn);
 
     head.appendChild(L); head.appendChild(R);
 
-    const rom = document.createElement('div');
-    rom.className='rom';
-    rom.textContent = p.rom || '';
-
-    const jp = document.createElement('div');
-    jp.className='jp';
-    jp.textContent = p.jp || '';
+    const rom = document.createElement('div'); rom.className='rom'; rom.textContent = p.rom || '';
+    const jp  = document.createElement('div'); jp.className='jp';  jp.textContent  = p.jp  || '';
 
     card.appendChild(head);
     card.appendChild(rom);
     card.appendChild(jp);
     phraseList.appendChild(card);
 
-    // 単語側と同じUI更新用プロパティを最低限用意
     p._els = { playBtn: btn, thText: L };
   });
 }
-
-  applyVisibility();
 
 function updateNowPlayingStyle(){
   [...ITEMS, ...PHRASES].forEach(it=>{
@@ -1006,6 +993,7 @@ levelFilter.addEventListener('change', doFilter);
 /* ===== 初期描画 ===== */
 render(ITEMS);
 renderPhrases(PHRASES);
+applyVisibility();
 
 /* =======================
    自動Day進行 & ストリーク
